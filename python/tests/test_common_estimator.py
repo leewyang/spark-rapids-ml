@@ -57,7 +57,7 @@ class SparkCumlDummyClass(_CumlClass):
         return [CumlDummy]
 
     @classmethod
-    def _param_mapping(cls) -> Mapping[str, Optional[str]]:
+    def _param_mapping(cls) -> Dict[str, Optional[str]]:
         return {
             "alpha": "a",  # direct map, different names
             "beta": None,  # unmapped, raise error if defined on Spark side
@@ -138,16 +138,16 @@ class SparkCumlDummy(
         return self._set(outputCols=value)
 
     def setAlpha(self, value: int) -> "SparkCumlDummy":
-        return self.set_params({"alpha": value})
+        return self.set_params(**{"alpha": value})
 
     def setBeta(self, value: int) -> "SparkCumlDummy":
         raise ValueError("Not supported")
 
     def setGamma(self, value: float) -> "SparkCumlDummy":
-        return self.set_params({"gamma": value})
+        return self.set_params(**{"gamma": value})
 
     def setK(self, value: str) -> "SparkCumlDummy":
-        return self.set_params({"k": value})
+        return self.set_params(**{"k": value})
 
     def _get_cuml_fit_func(
         self, dataset: DataFrame
@@ -240,10 +240,10 @@ class SparkCumlDummyModel(
         self.model_attribute_b = model_attribute_b
         self.set_params(**kwargs)
 
-    def setInputCols(self, value: List[str]) -> "SparkCumlDummy":
+    def setInputCols(self, value: List[str]) -> "SparkCumlDummyModel":
         return self._set(inputCols=value)
 
-    def setOutputCols(self, value: List[str]) -> "SparkCumlDummy":
+    def setOutputCols(self, value: List[str]) -> "SparkCumlDummyModel":
         return self._set(outputCols=value)
 
     def _get_cuml_transform_func(

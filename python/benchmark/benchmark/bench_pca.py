@@ -216,7 +216,7 @@ class BenchmarkPCA(BenchmarkBase):
             pc_for_scoring = gpu_model.pc.toArray()
 
         if num_cpus > 0:
-            from pyspark.ml.feature import PCA
+            from pyspark.ml.feature import PCA as SparkPCA
 
             assert num_gpus <= 0
             if is_array_col:
@@ -248,7 +248,7 @@ class BenchmarkPCA(BenchmarkBase):
             params = self.class_params
             print(f"Passing {params} to SparkPCA")
 
-            cpu_pca = PCA(**params).setInputCol(first_col).setOutputCol(output_col)
+            cpu_pca = SparkPCA(**params).setInputCol(first_col).setOutputCol(output_col)
 
             cpu_model, fit_time = with_benchmark(
                 "cpu fit", lambda: cpu_pca.fit(vector_df)
