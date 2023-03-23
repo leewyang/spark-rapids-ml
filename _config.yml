@@ -19,7 +19,7 @@ description: >- # this means to ignore newlines until "baseurl:"
   Spark Rapids ML enables GPU accelerated distributed machine learning on Apache Spark
   powered by the RAPIDS cuML library.
 baseurl: "/spark-rapids-ml" # the subpath of your site, e.g. /blog
-url: "leewyang.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+url: "nvidia.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 
 aux_links:
   "Spark Rapids ML on GitHub":
