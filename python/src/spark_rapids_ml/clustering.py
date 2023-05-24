@@ -222,6 +222,11 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__()
+
+        # !!LWY: hack
+        self.fake_pipe = kwargs.pop("fake_pipe") if "fake_pipe" in kwargs else False
+        self.use_cupy = kwargs.pop("use_cupy") if "use_cupy" in kwargs else False
+
         self.set_params(**kwargs)
 
     def setK(self, value: int) -> "KMeans":
@@ -274,6 +279,7 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
         ) -> Dict[str, Any]:
             import cupy as cp
             from cuml.cluster.kmeans_mg import KMeansMG as CumlKMeansMG
+            from cuml.preprocessing import MinMaxScaler
 
             kmeans_object = CumlKMeansMG(
                 handle=params[param_alias.handle],
@@ -286,6 +292,15 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
             else:
                 # features are either cp or np arrays here
                 concated = _concat_and_free(df_list, order=array_order)
+
+            if self.fake_pipe:
+                if self.use_cupy:
+                    concated = cp.array(concated)
+                print("====== start MinMaxScaler: {}".format(type(concated)))
+                scaler = MinMaxScaler()
+                scaler.fit(concated)
+                concated = scaler.transform(concated)
+                print("====== stop MinMaxScaler: {}".format(type(concated)))
 
             kmeans_object.fit(
                 concated,
