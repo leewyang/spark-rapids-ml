@@ -14,8 +14,9 @@
 # limitations under the License.
 #
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import cudf
 import numpy as np
 import pandas as pd
 from pyspark.ml.clustering import KMeansModel as SparkKMeansModel
@@ -35,6 +36,8 @@ from pyspark.sql.types import (
 from .core import (
     CumlT,
     FitInputType,
+    GPUEstimator,
+    GPUModel,
     _ConstructFunc,
     _CumlEstimator,
     _CumlModelWithPredictionCol,
@@ -126,7 +129,7 @@ class _KMeansCumlParams(_CumlParams, _KMeansParams, HasFeaturesCols):
         return self
 
 
-class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
+class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams, GPUEstimator):
     """
     KMeans algorithm partitions data points into a fixed number (denoted as k) of clusters.
     The algorithm initializes a set of k random centers then runs in iterations.
@@ -263,7 +266,7 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
         self,
         dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
-    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
+    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any]]:
         cls = self.__class__
 
         array_order = self._fit_array_order()
@@ -280,13 +283,13 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
                 **params[param_alias.cuml_init],
             )
             df_list = [x for (x, _, _) in dfs]
-            if isinstance(df_list[0], pd.DataFrame):
+            if isinstance(df_list[0], cudf.DataFrame):
+                concated = cudf.concat(df_list)
+            elif isinstance(df_list[0], pd.DataFrame):
                 concated = pd.concat(df_list)
             else:
-                # should be list of np.ndarrays here
-                concated = _concat_and_free(
-                    cast(List[np.ndarray], df_list), order=array_order
-                )
+                # should be list of numpy/cupy ndarrays
+                concated = _concat_and_free(df_list, order=array_order)
 
             kmeans_object.fit(
                 concated,
@@ -309,6 +312,10 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
 
         return _cuml_fit
 
+    def gpu_fit(self, dataset: "cudf.DataFrame") -> GPUModel:
+        """GPU optimized variant of transform."""
+        return KMeansModel([[]], 1, "float")
+
     def _out_schema(self) -> Union[StructType, str]:
         return StructType(
             [
@@ -324,7 +331,9 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
         return KMeansModel.from_row(result)
 
 
-class KMeansModel(KMeansClass, _CumlModelWithPredictionCol, _KMeansCumlParams):
+class KMeansModel(
+    KMeansClass, _CumlModelWithPredictionCol, _KMeansCumlParams, GPUModel
+):
     """
     KMeans gpu model for clustering input vectors to learned k centers.
     Refer to the KMeans class for learning the k centers.
@@ -380,16 +389,17 @@ class KMeansModel(KMeansClass, _CumlModelWithPredictionCol, _KMeansCumlParams):
         Fall back to PySpark ML KMeansModel"""
         return self.cpu().predict(value)
 
-    def _out_schema(self, input_schema: StructType) -> Union[StructType, str]:
-        ret_schema = "int"
-        return ret_schema
+    def _out_schema(
+        self, input_schema: Optional[Union[StructType, str]]
+    ) -> Union[StructType, str]:
+        return "int"
 
     def _transform_array_order(self) -> _ArrayOrder:
         return "C"
 
     def _get_cuml_transform_func(
-        self, dataset: DataFrame, category: str = transform_evaluate.transform
-    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc],]:
+        self, category: str = transform_evaluate.transform
+    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc]]:
         cuml_alg_params = self.cuml_params.copy()
 
         cluster_centers_ = self.cluster_centers_
@@ -417,3 +427,6 @@ class KMeansModel(KMeansClass, _CumlModelWithPredictionCol, _KMeansCumlParams):
             return pd.Series(res)
 
         return _construct_kmeans, _transform_internal, None
+
+    def gpu_transform(self, dataset: cudf.DataFrame) -> cudf.DataFrame:
+        return dataset

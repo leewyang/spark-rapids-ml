@@ -16,16 +16,28 @@
 import inspect
 import logging
 import sys
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Set, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
-if TYPE_CHECKING:
-    import cudf
-
+import cudf
+import cupy as cp
 import numpy as np
 from pyspark import BarrierTaskContext, SparkContext, TaskContext
 from pyspark.sql import SparkSession
 
 _ArrayOrder = Literal["C", "F"]
+
+A = TypeVar("A", np.ndarray, cp.ndarray)
 
 
 def _method_names_from_param(spark_param_name: str) -> List[str]:
@@ -188,24 +200,29 @@ class PartitionDescriptor:
         return cls(total_rows, total_cols, rank, parts_rank_size)
 
 
-def _concat_and_free(
-    np_array_list: List[np.ndarray], order: _ArrayOrder = "F"
-) -> np.ndarray:
+def _concat_and_free(array_list: List[A], order: _ArrayOrder = "F") -> A:
     """
-    concatenates a list of compatible numpy arrays into a 'order' ordered output array,
+    concatenates a list of compatible numpy or cupy arrays into a 'order' ordered output array,
     in a memory efficient way.
     Note: frees list elements so do not reuse after calling.
     """
-    rows = sum(arr.shape[0] for arr in np_array_list)
-    if len(np_array_list[0].shape) > 1:
-        cols = np_array_list[0].shape[1]
+    rows = sum(arr.shape[0] for arr in array_list)
+    if len(array_list[0].shape) > 1:
+        cols = array_list[0].shape[1]
         concat_shape: Tuple[int, ...] = (rows, cols)
     else:
         concat_shape = (rows,)
-    d_type = np_array_list[0].dtype
-    concated = np.empty(shape=concat_shape, order=order, dtype=d_type)
-    np.concatenate(np_array_list, out=concated)
-    del np_array_list[:]
+
+    d_type = array_list[0].dtype
+    if isinstance(array_list[0], np.ndarray):
+        concated = np.empty(shape=concat_shape, order=order, dtype=d_type)
+        np.concatenate(array_list, out=concated)
+    elif isinstance(array_list[0], cp.ndarray):
+        concated = cp.empty(shape=concat_shape, order=order, dtype=d_type)
+        cp.concatenate(array_list, out=concated)
+    else:
+        raise ValueError("Unsupported type: {}".format(type(array_list[0])))
+    del array_list[:]
     return concated
 
 

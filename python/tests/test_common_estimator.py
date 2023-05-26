@@ -16,6 +16,7 @@
 
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import cudf
 import numpy as np
 import pandas as pd
 import pytest
@@ -166,7 +167,7 @@ class SparkRapidsMLDummy(
         self,
         dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
-    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
+    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any]]:
         num_workers = self.num_workers
         partition_num = self.partition_num
         m = self.m
@@ -272,27 +273,21 @@ class SparkRapidsMLDummyModel(
         return self._set(outputCols=value)
 
     def _get_cuml_transform_func(
-        self, dataset: DataFrame, category: str = transform_evaluate.transform
-    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc],]:
+        self, category: str = transform_evaluate.transform
+    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc]]:
         model_attribute_a = self.model_attribute_a
-
-        # if the common framework tries to pickle the whole class,
-        # it will throw exception since dataset is not picklable.
-        self.test_pickle_dataframe = dataset
 
         def _construct_dummy() -> CumlT:
             dummy = CumlDummy(a=101, b=102, k=103)
             return dummy
 
-        def _dummy_transform(
-            dummy: CumlT, df: Union[pd.DataFrame, np.ndarray]
-        ) -> pd.DataFrame:
+        def _dummy_transform(dummy: CumlT, df: cudf.DataFrame) -> cudf.DataFrame:
             assert dummy.a == 101
             assert dummy.b == 102
             assert dummy.k == 103
 
             assert model_attribute_a == 1024
-            if isinstance(df, pd.DataFrame):
+            if isinstance(df, cudf.DataFrame):
                 return df
             else:
                 # TODO: implement when adding single column test
@@ -300,7 +295,10 @@ class SparkRapidsMLDummyModel(
 
         return _construct_dummy, _dummy_transform, None
 
-    def _out_schema(self, input_schema: StructType) -> Union[StructType, str]:
+    def _out_schema(
+        self, input_schema: Optional[Union[StructType, str]]
+    ) -> Union[StructType, str]:
+        assert input_schema is not None
         return input_schema
 
 

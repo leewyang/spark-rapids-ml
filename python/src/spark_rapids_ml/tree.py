@@ -30,6 +30,7 @@ from typing import (
     cast,
 )
 
+import cudf
 import numpy as np
 import pandas as pd
 from pyspark.ml.classification import DecisionTreeClassificationModel
@@ -54,7 +55,7 @@ from pyspark.sql.types import (
 from .core import (
     CumlT,
     FitInputType,
-    TransformInputType,
+    TransformDataType,
     _ConstructFunc,
     _CumlEstimatorSupervised,
     _CumlModelWithPredictionCol,
@@ -280,7 +281,7 @@ class _RandomForestEstimator(
         self,
         dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
-    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
+    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any]]:
         # Each element of n_estimators_of_all_params is a list value which
         # is composed of n_estimators per worker.
         n_estimators_of_all_params: List[List[int]] = []
@@ -306,13 +307,21 @@ class _RandomForestEstimator(
             # 1. prepare the dataset
             X_list = [item[0] for item in dfs]
             y_list = [item[1] for item in dfs]
-            if isinstance(X_list[0], pd.DataFrame):
+            if isinstance(X_list[0], cudf.DataFrame):
+                X = cudf.concat(X_list)
+                y = cudf.concat(y_list)
+            elif isinstance(X_list[0], pd.DataFrame):
                 X = pd.concat(X_list)
                 y = pd.concat(y_list)
             else:
-                # should be list of np.ndarrays here
-                X = _concat_and_free(cast(List[np.ndarray], X_list))
-                y = _concat_and_free(cast(List[np.ndarray], y_list))
+                # should be list of numpy or cupy ndarrays here
+                X = _concat_and_free(X_list)
+
+                # labels are always cudf.Series
+                if isinstance(y_list[0], cudf.Series):
+                    y = cudf.concat(y_list)
+                else:
+                    y = _concat_and_free(y_list)
 
             if is_classification:
                 from cuml import RandomForestClassifier as cuRf
@@ -560,8 +569,8 @@ class _RandomForestModel(
         return uid, java_trees
 
     def _get_cuml_transform_func(
-        self, dataset: DataFrame, category: str = transform_evaluate.transform
-    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc],]:
+        self, category: str = transform_evaluate.transform
+    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc]]:
         treelite_model = self._treelite_model
         is_classification = self._is_classification()
 
@@ -578,7 +587,7 @@ class _RandomForestModel(
 
             return rf
 
-        def _predict(rf: CumlT, pdf: TransformInputType) -> pd.Series:
+        def _predict(rf: CumlT, pdf: TransformDataType) -> pd.Series:
             rf.update_labels = False
             ret = rf.predict(pdf)
             return pd.Series(ret)

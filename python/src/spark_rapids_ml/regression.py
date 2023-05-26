@@ -50,7 +50,7 @@ from pyspark.sql.types import (
 from .core import (
     CumlT,
     FitInputType,
-    TransformInputType,
+    TransformDataType,
     _ConstructFunc,
     _CumlEstimatorSupervised,
     _CumlModelWithPredictionCol,
@@ -323,7 +323,7 @@ class LinearRegression(
         self,
         dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
-    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
+    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any]]:
         def _linear_regression_fit(
             dfs: FitInputType,
             params: Dict[str, Any],
@@ -509,8 +509,8 @@ class LinearRegressionModel(
         return self.cpu().evaluate(dataset)
 
     def _get_cuml_transform_func(
-        self, dataset: DataFrame, category: str = transform_evaluate.transform
-    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc],]:
+        self, category: str = transform_evaluate.transform
+    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc]]:
         coef_ = self.coef_
         intercept_ = self.intercept_
         n_cols = self.n_cols
@@ -527,7 +527,7 @@ class LinearRegressionModel(
 
             return lr
 
-        def _predict(lr: CumlT, pdf: TransformInputType) -> pd.Series:
+        def _predict(lr: CumlT, pdf: TransformDataType) -> pd.Series:
             ret = lr.predict(pdf)
             return pd.Series(ret)
 

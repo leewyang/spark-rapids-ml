@@ -16,7 +16,7 @@
 import json
 import os
 import threading
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections import namedtuple
 from typing import (
     TYPE_CHECKING,
@@ -34,10 +34,12 @@ from typing import (
     Union,
 )
 
+import cudf
+import cupy as cp
 import numpy as np
 import pandas as pd
 from pyspark import RDD, TaskContext
-from pyspark.ml import Estimator, Model
+from pyspark.ml import Estimator, Model, Transformer
 from pyspark.ml.functions import array_to_vector, vector_to_array
 from pyspark.ml.linalg import VectorUDT
 from pyspark.ml.param.shared import (
@@ -78,7 +80,6 @@ from .utils import (
 )
 
 if TYPE_CHECKING:
-    import cudf
     from pyspark.ml._typing import ParamMap
 
 CumlT = Any
@@ -86,25 +87,34 @@ CumlT = Any
 _SinglePdDataFrameBatchType = Tuple[
     pd.DataFrame, Optional[pd.DataFrame], Optional[pd.DataFrame]
 ]
+
 _SingleNpArrayBatchType = Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]
 
+_SingleCuDataFrameBatchType = Tuple[
+    "cudf.DataFrame", Optional["cudf.DataFrame"], Optional["cudf.DataFrame"]
+]
+
 # FitInputType is type of [(feature, label), ...]
-FitInputType = Union[List[_SinglePdDataFrameBatchType], List[_SingleNpArrayBatchType]]
+FitInputType = Union[
+    List[_SinglePdDataFrameBatchType],
+    List[_SingleNpArrayBatchType],
+    List[_SingleCuDataFrameBatchType],
+]
 
 # TransformInput type
-TransformInputType = Union["cudf.DataFrame", np.ndarray]
+TransformDataType = Union[cudf.DataFrame, cp.ndarray]
 
 # Function to construct cuml instance on the executor side
 _ConstructFunc = Callable[..., CumlT]
 
 # Function to do the inference using cuml instance constructed by _ConstructFunc
-_TransformFunc = Callable[[CumlT, TransformInputType], pd.DataFrame]
+_TransformFunc = Callable[[CumlT, TransformDataType], TransformDataType]
 
 # Function to do evaluation based on the prediction result got from _TransformFunc
 _EvaluateFunc = Callable[
     [
-        TransformInputType,  # input dataset with label column
-        TransformInputType,  # inferred dataset with prediction column
+        TransformDataType,  # input dataset with label column
+        TransformDataType,  # inferred dataset with prediction column
     ],
     pd.DataFrame,
 ]
@@ -131,6 +141,21 @@ CumlModel = TypeVar("CumlModel", bound="_CumlModel")
 # Global parameter used by core and subclasses.
 TransformEvaluate = namedtuple("TransformEvaluate", ("transform", "transform_evaluate"))
 transform_evaluate = TransformEvaluate("transform", "transform_evaluate")
+
+
+class GPUTransformer(ABC):
+    def gpu_transform(self, dataset: "cudf.DataFrame") -> "cudf.DataFrame":
+        raise NotImplementedError
+
+
+class GPUModel(GPUTransformer):
+    pass
+
+
+class GPUEstimator(ABC):
+    def gpu_fit(self, dataset: "cudf.DataFrame") -> GPUModel:
+        """GPU optimized variant of transform."""
+        raise NotImplementedError
 
 
 class _CumlEstimatorWriter(MLWriter):
@@ -383,7 +408,7 @@ class _CumlCaller(_CumlParams, _CumlCommon):
 
         def _get_cuml_fit_func(self, dataset: DataFrame, extra_params: Optional[List[Dict[str, Any]]] = None):
             ...
-            def _cuml_fit(df: CumlInputType, params: Dict[str, Any]) -> Dict[str, Any]:
+            def _cuml_fit(df: FitInputType, params: Dict[str, Any]) -> Dict[str, Any]:
                 "" "
                 df:  a sequence of (X, Y)
                 params: a series of parameters stored in dictionary,
@@ -484,13 +509,20 @@ class _CumlCaller(_CumlParams, _CumlCommon):
                 sizes = []
                 for pdf in pdf_iter:
                     sizes.append(pdf.shape[0])
+
                     if multi_col_names:
-                        features = pdf[multi_col_names]
+                        features = cudf.from_pandas(pdf[multi_col_names])
                     else:
-                        features = np.array(list(pdf[alias.data]), order=array_order)
-                    label = pdf[alias.label] if alias.label in pdf.columns else None
+                        features = cp.array(
+                            np.array(list(pdf[alias.data]), order=array_order)
+                        )
+                    label = (
+                        cudf.from_pandas(pdf[alias.label])
+                        if alias.label in pdf.columns
+                        else None
+                    )
                     row_number = (
-                        pdf[alias.row_number]
+                        cudf.from_pandas(pdf[alias.row_number])
                         if alias.row_number in pdf.columns
                         else None
                     )
@@ -578,7 +610,7 @@ class _FitMultipleIterator(Generic[CumlModel]):
         return self.__next__()
 
 
-class _CumlEstimator(Estimator, _CumlCaller):
+class _CumlEstimator(Estimator, _CumlCaller, GPUEstimator):
     """
     The common estimator to handle the fit callback (_fit). It should:
     1. set the default parameters
@@ -635,7 +667,9 @@ class _CumlEstimator(Estimator, _CumlCaller):
             return super().fitMultiple(dataset, paramMaps)
 
     def _fit_internal(
-        self, dataset: DataFrame, paramMaps: Optional[Sequence["ParamMap"]]
+        self,
+        dataset: DataFrame,
+        paramMaps: Optional[Sequence["ParamMap"]],
     ) -> List["_CumlModel"]:
         """Fit multiple models according to the parameters maps"""
         pipelined_rdd = self._call_cuml_fit_func(
@@ -718,52 +752,14 @@ class _CumlEstimatorSupervised(_CumlEstimator, HasLabelCol):
         return select_cols, multi_col_names, dimension, feature_type
 
 
-class _CumlModel(Model, _CumlParams, _CumlCommon):
-    """
-    Abstract class for spark-rapids-ml models that are fitted by spark-rapids-ml estimators.
-    """
-
-    def __init__(
-        self,
-        *,
-        dtype: Optional[str] = None,
-        n_cols: Optional[int] = None,
-        **model_attributes: Any,
-    ) -> None:
-        """
-        Subclass must pass the model attributes which will be saved in model persistence.
-        """
+class _CumlTransformer(Transformer, _CumlParams, GPUTransformer):
+    def __init__(self) -> None:
         super().__init__()
-        self.initialize_cuml_params()
-
-        # model_data is the native data which will be saved for model persistence
-        self._model_attributes = model_attributes
-        self._model_attributes["dtype"] = dtype
-        self._model_attributes["n_cols"] = n_cols
-        self.dtype = dtype
-        self.n_cols = n_cols
-
-    def cpu(self) -> Model:
-        """Return the equivalent PySpark CPU model"""
-        raise NotImplementedError()
-
-    def get_model_attributes(self) -> Optional[Dict[str, Any]]:
-        """Return model attributes as a dictionary."""
-        return self._model_attributes
-
-    @classmethod
-    def from_row(cls, model_attributes: Row):  # type: ignore
-        """
-        Default to pass all the attributes of the model to the model constructor,
-        So please make sure if the constructor can accept all of them.
-        """
-        attr_dict = model_attributes.asDict()
-        return cls(**attr_dict)
 
     @abstractmethod
     def _get_cuml_transform_func(
-        self, dataset: DataFrame, category: str = transform_evaluate.transform
-    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc],]:
+        self, category: str = transform_evaluate.transform
+    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc]]:
         """
         Subclass must implement this function to return three functions,
         1. a function to construct cuml counterpart instance
@@ -776,7 +772,7 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
             ...
             def _construct_cuml_object() -> CumlT
                 ...
-            def _cuml_transform(cuml_obj: CumlT, df: Union[pd.DataFrame, np.ndarray]) ->pd.DataFrame:
+            def _cuml_transform(cuml_obj: CumlT, df: cudf.DataFrame) -> cudf.DataFrame:
                 ...
             def _evaluate(input_df: Union[pd.DataFrame, np.ndarray], transformed_df: Union[pd.DataFrame, np.ndarray]) -> pd.DataFrame:
                 ...
@@ -787,20 +783,6 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
 
         _get_cuml_transform_func itself runs on the driver side, while the returned
         _construct_cuml_object and _cuml_transform, _evaluate will run on the executor side.
-        """
-        raise NotImplementedError()
-
-    def _transform_array_order(self) -> _ArrayOrder:
-        """
-        preferred array order for converting single column array type to numpy arrays: "C" or "F"
-        """
-        return "F"
-
-    @abstractmethod
-    def _out_schema(self, input_schema: StructType) -> Union[StructType, str]:
-        """
-        The output schema of the model, which will be used to
-        construct the returning pandas dataframe
         """
         raise NotImplementedError()
 
@@ -842,49 +824,6 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
 
         return dataset, select_cols, input_is_multi_cols
 
-    def _transform_evaluate_internal(
-        self, dataset: DataFrame, schema: Union[StructType, str]
-    ) -> DataFrame:
-        """Internal API to support transform and evaluation in a single pass"""
-        dataset, select_cols, input_is_multi_cols = self._pre_process_data(dataset)
-
-        is_local = _is_local(_get_spark_session().sparkContext)
-
-        # Get the functions which will be passed into executor to run.
-        (
-            construct_cuml_object_func,
-            cuml_transform_func,
-            evaluate_func,
-        ) = self._get_cuml_transform_func(
-            dataset, transform_evaluate.transform_evaluate
-        )
-
-        array_order = self._transform_array_order()
-
-        def _transform_udf(pdf_iter: Iterator[pd.DataFrame]) -> pd.DataFrame:
-            from pyspark import TaskContext
-
-            context = TaskContext.get()
-
-            _CumlCommon.set_gpu_device(context, is_local, True)
-
-            # Construct the cuml counterpart object
-            cuml_object = construct_cuml_object_func()
-
-            for pdf in pdf_iter:
-                # Transform the dataset
-                if input_is_multi_cols:
-                    data = cuml_transform_func(cuml_object, pdf[select_cols])
-                else:
-                    nparray = np.array(list(pdf[select_cols[0]]), order=array_order)
-                    data = cuml_transform_func(cuml_object, nparray)
-                # Evaluate the dataset if necessary.
-                if evaluate_func is not None:
-                    data = evaluate_func(pdf, data)
-                yield data
-
-        return dataset.mapInPandas(_transform_udf, schema=schema)  # type: ignore
-
     def _transform(self, dataset: DataFrame) -> DataFrame:
         """
         Transforms the input dataset.
@@ -902,6 +841,108 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
         return self._transform_evaluate_internal(
             dataset, schema=self._out_schema(dataset.schema)
         )
+
+    def _transform_array_order(self) -> _ArrayOrder:
+        """
+        preferred array order for converting single column array type to numpy arrays: "C" or "F"
+        """
+        return "F"
+
+    def _transform_evaluate_internal(
+        self, dataset: DataFrame, schema: Union[StructType, str]
+    ) -> DataFrame:
+        """Internal API to support transform and evaluation in a single pass"""
+        dataset, select_cols, input_is_multi_cols = self._pre_process_data(dataset)
+
+        is_local = _is_local(_get_spark_session().sparkContext)
+
+        # Get the functions which will be passed into executor to run.
+        (
+            construct_cuml_object_func,
+            cuml_transform_func,
+            evaluate_func,
+        ) = self._get_cuml_transform_func(transform_evaluate.transform_evaluate)
+
+        array_order = self._transform_array_order()
+
+        def _transform_udf(pdf_iter: Iterator[pd.DataFrame]) -> pd.DataFrame:
+            from pyspark import TaskContext
+
+            context = TaskContext.get()
+
+            _CumlCommon.set_gpu_device(context, is_local, True)
+
+            # Construct the cuml counterpart object
+            cuml_object = construct_cuml_object_func()
+
+            for pdf in pdf_iter:
+                gdf = cudf.from_pandas(pdf)
+
+                # Transform the dataset
+                if input_is_multi_cols:
+                    data = cuml_transform_func(cuml_object, gdf[select_cols])
+                else:
+                    cparray = cp.array(list(gdf[select_cols[0]]), order=array_order)
+                    data = cuml_transform_func(cuml_object, cparray)
+                # Evaluate the dataset if necessary.
+                if evaluate_func is not None:
+                    data = evaluate_func(gdf, data)
+                yield data.to_pandas()
+
+        return dataset.mapInPandas(_transform_udf, schema=schema)  # type: ignore
+
+    @abstractmethod
+    def _out_schema(
+        self, input_schema: Optional[Union[StructType, str]]
+    ) -> Union[StructType, str]:
+        """
+        The output schema of the model, which will be used to
+        construct the returning pandas dataframe
+        """
+        raise NotImplementedError()
+
+
+class _CumlModel(Model, _CumlTransformer, _CumlParams, _CumlCommon, GPUModel):
+    """
+    Abstract class for spark-rapids-ml models that are fitted by spark-rapids-ml estimators.
+    """
+
+    def __init__(
+        self,
+        *,
+        dtype: Optional[str] = None,
+        n_cols: Optional[int] = None,
+        **model_attributes: Any,
+    ) -> None:
+        """
+        Subclass must pass the model attributes which will be saved in model persistence.
+        """
+        super().__init__()
+        self.initialize_cuml_params()
+
+        # model_data is the native data which will be saved for model persistence
+        self._model_attributes = model_attributes
+        self._model_attributes["dtype"] = dtype
+        self._model_attributes["n_cols"] = n_cols
+        self.dtype = dtype
+        self.n_cols = n_cols
+
+    def cpu(self) -> Model:
+        """Return the equivalent PySpark CPU model"""
+        raise NotImplementedError()
+
+    def get_model_attributes(self) -> Optional[Dict[str, Any]]:
+        """Return model attributes as a dictionary."""
+        return self._model_attributes
+
+    @classmethod
+    def from_row(cls, model_attributes: Row):  # type: ignore
+        """
+        Default to pass all the attributes of the model to the model constructor,
+        So please make sure if the constructor can accept all of them.
+        """
+        attr_dict = model_attributes.asDict()
+        return cls(**attr_dict)
 
     def write(self) -> MLWriter:
         return _CumlModelWriter(self)
@@ -949,7 +990,7 @@ class _CumlModelWithColumns(_CumlModel):
             construct_cuml_object_func,
             cuml_transform_func,
             _,
-        ) = self._get_cuml_transform_func(dataset)
+        ) = self._get_cuml_transform_func()
 
         array_order = self._transform_array_order()
 
@@ -999,7 +1040,9 @@ class _CumlModelWithColumns(_CumlModel):
 
             return dataset
 
-    def _out_schema(self, input_schema: StructType) -> Union[StructType, str]:
+    def _out_schema(
+        self, input_schema: Optional[Union[StructType, str]]
+    ) -> Union[StructType, str]:
         assert self.dtype is not None
 
         pyspark_type = dtype_to_pyspark_type(self.dtype)

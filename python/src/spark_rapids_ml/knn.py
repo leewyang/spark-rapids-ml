@@ -290,7 +290,7 @@ class NearestNeighbors(
 
     def _get_cuml_fit_func(  # type: ignore
         self, dataset: DataFrame
-    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
+    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any]]:
         """
         This class overrides _fit and will not call _get_cuml_fit_func.
         """
@@ -435,7 +435,7 @@ class NearestNeighborsModel(
         self,
         dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
-    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
+    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any]]:
         label_isdata = self._label_isdata
         label_isquery = self._label_isquery
         id_col_name = self.getIdCol()
@@ -470,8 +470,8 @@ class NearestNeighborsModel(
                 item_list.append(x_array[item_filter])
                 query_list.append(x_array[query_filter])
 
-                item_row_number += row_number_array[item_filter].tolist()  # type: ignore
-                query_row_number += row_number_array[query_filter].tolist()  # type: ignore
+                item_row_number += row_number_array[item_filter].to_arrow().to_pylist()  # type: ignore
+                query_row_number += row_number_array[query_filter].to_arrow().to_pylist()  # type: ignore
 
             if isinstance(item_list[0], pd.DataFrame):
                 item = [pd.concat(item_list)]
@@ -561,8 +561,8 @@ class NearestNeighborsModel(
         )
 
     def _get_cuml_transform_func(
-        self, dataset: DataFrame, category: str = transform_evaluate.transform
-    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc],]:
+        self, category: str = transform_evaluate.transform
+    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc]]:
         raise NotImplementedError(
             "'_CumlModel._get_cuml_transform_func' method is not implemented. Use 'kneighbors' instead."
         )

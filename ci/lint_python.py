@@ -27,8 +27,8 @@ def run_formatter(rel_paths: List[str]) -> bool:
         isort_cmd.remove("--check")
         black_cmd.remove("--check")
         msg = (
-            "Please run the following command on your machine to address the format"
-            " errors:\n {}\n {}".format(" ".join(isort_cmd), " ".join(black_cmd))
+            "Please run the following command on your machine to address the format errors:\n"
+            "\n{}; {}\n".format(" ".join(isort_cmd), " ".join(black_cmd))
         )
         print(msg, file=sys.stdout)
         return False

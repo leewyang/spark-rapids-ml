@@ -45,7 +45,7 @@ from pyspark.sql.types import (
 
 from .core import (
     CumlT,
-    TransformInputType,
+    TransformDataType,
     _ConstructFunc,
     _EvaluateFunc,
     _TransformFunc,
@@ -271,11 +271,11 @@ class RandomForestClassificationModel(
         return self.cpu().evaluate(dataset)
 
     def _get_cuml_transform_func(
-        self, dataset: DataFrame, category: str = transform_evaluate.transform
-    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc],]:
-        _construct_rf, _, _ = super()._get_cuml_transform_func(dataset)
+        self, category: str = transform_evaluate.transform
+    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc]]:
+        _construct_rf, _, _ = super()._get_cuml_transform_func()
 
-        def _predict(rf: CumlT, pdf: TransformInputType) -> pd.Series:
+        def _predict(rf: CumlT, pdf: TransformDataType) -> pd.Series:
             data = {}
             rf.update_labels = False
             data[pred.prediction] = rf.predict(pdf)
@@ -293,8 +293,8 @@ class RandomForestClassificationModel(
             return pd.DataFrame(data)
 
         def _evaluate(
-            input: TransformInputType,
-            transformed: TransformInputType,
+            input: TransformDataType,
+            transformed: TransformDataType,
         ) -> pd.DataFrame:
             # calculate the count of (label, prediction)
             comb = pd.DataFrame(

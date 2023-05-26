@@ -179,7 +179,7 @@ class PCA(PCAClass, _CumlEstimator, _PCACumlParams):
         self,
         dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
-    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
+    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any]]:
         def _cuml_fit(
             dfs: FitInputType,
             params: Dict[str, Any],
@@ -340,8 +340,8 @@ class PCAModel(PCAClass, _CumlModelWithColumns, _PCACumlParams):
         return self._pca_ml_model
 
     def _get_cuml_transform_func(
-        self, dataset: DataFrame, category: str = transform_evaluate.transform
-    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc],]:
+        self, category: str = transform_evaluate.transform
+    ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc]]:
         cuml_alg_params = self.cuml_params.copy()
 
         n_cols = self.n_cols
@@ -397,7 +397,9 @@ class PCAModel(PCAClass, _CumlModelWithColumns, _PCACumlParams):
 
         return _construct_pca, _transform_internal, None
 
-    def _out_schema(self, input_schema: StructType) -> Union[StructType, str]:
+    def _out_schema(
+        self, input_schema: Optional[Union[StructType, str]]
+    ) -> Union[StructType, str]:
         assert self.dtype is not None
 
         pyspark_type = dtype_to_pyspark_type(self.dtype)
