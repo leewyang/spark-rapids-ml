@@ -45,4 +45,3 @@ ldconfig
 python_ver=`python --version | grep -oP '3\.[0-9]+'`
 unzip ${SPARK_RAPIDS_ML_ZIP} -d /databricks/python3/lib/python${python_ver}/site-packages
 
-

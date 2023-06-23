@@ -226,6 +226,7 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
         # !!LWY: hack
         self.fake_pipe = kwargs.pop("fake_pipe") if "fake_pipe" in kwargs else False
         self.use_cupy = kwargs.pop("use_cupy") if "use_cupy" in kwargs else False
+        self.use_comms = kwargs.pop("use_comms") if "use_comms" in kwargs else False
 
         self.set_params(**kwargs)
 
@@ -277,9 +278,30 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
             dfs: FitInputType,
             params: Dict[str, Any],
         ) -> Dict[str, Any]:
+            # import base64
             import cupy as cp
+            import json
+            # import struct
+            import time
+            # from array import array
             from cuml.cluster.kmeans_mg import KMeansMG as CumlKMeansMG
             from cuml.preprocessing import MinMaxScaler
+            # from cupy.cuda import nccl
+            from pyspark import BarrierTaskContext
+
+            taskcontext = BarrierTaskContext.get()
+
+            # rank = params[param_alias.rank]
+            # ndev = params[param_alias.nranks]
+
+            # commId = struct.unpack('@127b', params[param_alias.nccl_unique_id])
+            # commId = (*commId, 0)
+            # print(f"===== raft_dask commId: {commId}")
+
+            # nccl_uid = base64.b64encode(array('b', nccl.get_unique_id())).decode('utf-8')
+            # nccl_uids = taskcontext.allGather(nccl_uid)
+            # commId = struct.unpack('@128b', base64.b64decode(nccl_uids[0]))
+            # print(f"===== cupy.cuda.nccl commId: {commId}")
 
             kmeans_object = CumlKMeansMG(
                 handle=params[param_alias.handle],
@@ -294,18 +316,73 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
                 concated = _concat_and_free(df_list, order=array_order)
 
             if self.fake_pipe:
+                # from cupy.cuda import nccl
+
+                # print(f"====== start NCCL: {ndev=}, {commId=}, {rank=}")
+                # comm = nccl.NcclCommunicator(ndev, commId, rank)
+                # data = cp.arange(10) + cp.cuda.device.get_device_id()
+                # print(f"1: {data=}")
+                # stream = cp.cuda.stream.get_current_stream()
+                # print(f"2: allReduce")
+                # comm.allReduce(id(data), id(data), len(data), nccl.NCCL_INT, nccl.NCCL_SUM, stream.ptr)
+                # print(f"3: {data=}")
+                # print(f"4: synchronize")
+                # stream.synchronize()
+                # print("====== stop NCCL: {}".format(time.time() - start))
+
                 if self.use_cupy:
                     concated = cp.array(concated)
-                print("====== start MinMaxScaler: {}".format(type(concated)))
+                # print(f"==== 1. {concated}")
+
+                print("==== start MinMaxScaler: {}".format(type(concated)))
+                start = time.time()
                 scaler = MinMaxScaler()
                 scaler.fit(concated)
-                concated = scaler.transform(concated)
-                print("====== stop MinMaxScaler: {}".format(type(concated)))
 
+                if self.use_comms:
+                    print("===== start allReduce")
+                    start_allreduce = time.time()
+                    stats = {
+                        "min": scaler.data_min_.tolist(),
+                        "max": scaler.data_max_.tolist(),
+                        "range": scaler.data_range_.tolist()
+                    }
+                    # print(f"====== {stats=}")
+                    all_stats = taskcontext.allGather(json.dumps(stats))
+                    # print(f"===== {all_stats=}")
+
+                    np_stats = [json.loads(s) for s in all_stats]
+                    # print(f"===== {np_stats=}")
+                    all_min = np.array([np.array(s["min"]) for s in np_stats]).min(axis=0)
+                    all_max = np.array([np.array(s["max"]) for s in np_stats]).max(axis=0)
+                    all_range = all_max - all_min
+
+                    # print(f"===== {all_min=}")
+                    # print(f"===== {all_max=}")
+                    # print(f"===== {all_range=}")
+
+                    # scaler.data_min_ = all_min
+                    # scaler.data_max_ = all_max
+                    # scaler.data_range_ = all_range
+
+                    scaler = MinMaxScaler()
+                    scaler.fit(cp.array([all_min, all_max]))
+                    # print(f"+++++ {global_scaler.data_min_}")
+                    # print(f"+++++ {global_scaler.data_max_}")
+                    print("===== stop allReduce: {}".format(time.time() - start_allreduce))
+
+                concated = scaler.transform(concated)
+                # print(f"==== 2. {concated}")
+
+                print("==== stop MinMaxScaler: {}".format((time.time() - start)))
+
+            print("==== start KMeans")
+            start_kmeans = time.time()
             kmeans_object.fit(
                 concated,
                 sample_weight=None,
             )
+            print("==== stop KMeans: {}".format((time.time() - start_kmeans)))
 
             logger = get_logger(cls)
             # TBD: inertia is always 0 for some reason
