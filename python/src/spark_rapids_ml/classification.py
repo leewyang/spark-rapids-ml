@@ -385,9 +385,9 @@ class RandomForestClassificationModel(
         return self.cpu().evaluate(dataset)
 
     def _get_cuml_transform_func(
-        self, dataset: DataFrame, category: str = transform_evaluate.transform
+        self, category: str = transform_evaluate.transform
     ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc],]:
-        _construct_rf, _, _ = super()._get_cuml_transform_func(dataset)
+        _construct_rf, _, _ = super()._get_cuml_transform_func(category)
 
         def _predict(rf: CumlT, pdf: TransformInputType) -> pd.Series:
             data = {}

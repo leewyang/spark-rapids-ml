@@ -374,7 +374,6 @@ class _CumlCaller(_CumlParams, _CumlCommon):
     @abstractmethod
     def _get_cuml_fit_func(
         self,
-        dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
     ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
         """
@@ -383,7 +382,7 @@ class _CumlCaller(_CumlParams, _CumlCommon):
 
         Eg,
 
-        def _get_cuml_fit_func(self, dataset: DataFrame, extra_params: Optional[List[Dict[str, Any]]] = None):
+        def _get_cuml_fit_func(self, extra_params: Optional[List[Dict[str, Any]]] = None):
             ...
             def _cuml_fit(df: CumlInputType, params: Dict[str, Any]) -> Dict[str, Any]:
                 "" "
@@ -461,7 +460,7 @@ class _CumlCaller(_CumlParams, _CumlCommon):
         params[param_alias.fit_multiple_params] = fit_multiple_params
 
         cuml_fit_func = self._get_cuml_fit_func(
-            dataset, None if len(fit_multiple_params) == 0 else fit_multiple_params
+            None if len(fit_multiple_params) == 0 else fit_multiple_params
         )
         array_order = self._fit_array_order()
 
@@ -795,7 +794,7 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
 
     @abstractmethod
     def _get_cuml_transform_func(
-        self, dataset: DataFrame, category: str = transform_evaluate.transform
+        self, category: str = transform_evaluate.transform
     ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc],]:
         """
         Subclass must implement this function to return three functions,
@@ -805,7 +804,7 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
 
         Eg,
 
-        def _get_cuml_transform_func(self, dataset: DataFrame):
+        def _get_cuml_transform_func(self):
             ...
             def _construct_cuml_object() -> CumlT
                 ...
@@ -888,9 +887,7 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
             construct_cuml_object_func,
             cuml_transform_func,
             evaluate_func,
-        ) = self._get_cuml_transform_func(
-            dataset, transform_evaluate.transform_evaluate
-        )
+        ) = self._get_cuml_transform_func(transform_evaluate.transform_evaluate)
 
         array_order = self._transform_array_order()
 
@@ -1018,7 +1015,7 @@ class _CumlModelWithColumns(_CumlModel):
             construct_cuml_object_func,
             cuml_transform_func,
             _,
-        ) = self._get_cuml_transform_func(dataset)
+        ) = self._get_cuml_transform_func()
 
         array_order = self._transform_array_order()
 

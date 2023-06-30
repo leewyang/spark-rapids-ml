@@ -289,7 +289,8 @@ class NearestNeighbors(
         pass
 
     def _get_cuml_fit_func(  # type: ignore
-        self, dataset: DataFrame
+        self,
+        extra_params: Optional[List[Dict[str, Any]]] = None,
     ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
         """
         This class overrides _fit and will not call _get_cuml_fit_func.
@@ -433,7 +434,6 @@ class NearestNeighborsModel(
 
     def _get_cuml_fit_func(
         self,
-        dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
     ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
         label_isdata = self._label_isdata
@@ -561,7 +561,7 @@ class NearestNeighborsModel(
         )
 
     def _get_cuml_transform_func(
-        self, dataset: DataFrame, category: str = transform_evaluate.transform
+        self, category: str = transform_evaluate.transform
     ) -> Tuple[_ConstructFunc, _TransformFunc, Optional[_EvaluateFunc],]:
         raise NotImplementedError(
             "'_CumlModel._get_cuml_transform_func' method is not implemented. Use 'kneighbors' instead."
