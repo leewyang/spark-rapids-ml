@@ -37,7 +37,7 @@ from typing import (
 import numpy as np
 import pandas as pd
 from pyspark import RDD, TaskContext
-from pyspark.ml import Estimator, Model
+from pyspark.ml import Estimator, Model, Transformer
 from pyspark.ml.evaluation import Evaluator
 from pyspark.ml.functions import array_to_vector, vector_to_array
 from pyspark.ml.linalg import VectorUDT
@@ -80,6 +80,7 @@ from .utils import (
 
 if TYPE_CHECKING:
     import cudf
+    import cupy as cp
     from pyspark.ml._typing import ParamMap
 
 CumlT = Any
@@ -92,14 +93,15 @@ _SingleNpArrayBatchType = Tuple[np.ndarray, Optional[np.ndarray], Optional[np.nd
 # FitInputType is type of [(feature, label), ...]
 FitInputType = Union[List[_SinglePdDataFrameBatchType], List[_SingleNpArrayBatchType]]
 
-# TransformInput type
-TransformInputType = Union["cudf.DataFrame", np.ndarray]
+# Input and output datatypes for transform functions
+TransformInputType = Union["cudf.DataFrame", "cupy.array"]
+TransformOutputType = "cudf.DataFrame"
 
 # Function to construct cuml instances on the executor side
 _ConstructFunc = Callable[..., Union[CumlT, List[CumlT]]]
 
 # Function to do the inference using cuml instance constructed by _ConstructFunc
-_TransformFunc = Callable[[CumlT, TransformInputType], pd.DataFrame]
+_TransformFunc = Callable[[CumlT, TransformInputType], TransformOutputType]
 
 # Function to do evaluation based on the prediction result got from _TransformFunc
 _EvaluateFunc = Callable[
@@ -107,7 +109,7 @@ _EvaluateFunc = Callable[
         TransformInputType,  # input dataset with label column
         TransformInputType,  # inferred dataset with prediction column
     ],
-    pd.DataFrame,
+    TransformOutputType
 ]
 
 # Global constant for defining column alias
@@ -750,47 +752,13 @@ class _CumlEstimatorSupervised(_CumlEstimator, HasLabelCol):
         return select_cols, multi_col_names, dimension, feature_type
 
 
-class _CumlModel(Model, _CumlParams, _CumlCommon):
+class _CumlTransformer(Transformer, _CumlParams, _CumlCommon):
     """
     Abstract class for spark-rapids-ml models that are fitted by spark-rapids-ml estimators.
     """
 
-    def __init__(
-        self,
-        *,
-        dtype: Optional[str] = None,
-        n_cols: Optional[int] = None,
-        **model_attributes: Any,
-    ) -> None:
-        """
-        Subclass must pass the model attributes which will be saved in model persistence.
-        """
+    def __init__(self) -> None:
         super().__init__()
-        self.initialize_cuml_params()
-
-        # model_data is the native data which will be saved for model persistence
-        self._model_attributes = model_attributes
-        self._model_attributes["dtype"] = dtype
-        self._model_attributes["n_cols"] = n_cols
-        self.dtype = dtype
-        self.n_cols = n_cols
-
-    def cpu(self) -> Model:
-        """Return the equivalent PySpark CPU model"""
-        raise NotImplementedError()
-
-    def get_model_attributes(self) -> Optional[Dict[str, Any]]:
-        """Return model attributes as a dictionary."""
-        return self._model_attributes
-
-    @classmethod
-    def from_row(cls, model_attributes: Row):  # type: ignore
-        """
-        Default to pass all the attributes of the model to the model constructor,
-        So please make sure if the constructor can accept all of them.
-        """
-        attr_dict = model_attributes.asDict()
-        return cls(**attr_dict)
 
     @abstractmethod
     def _get_cuml_transform_func(
@@ -892,6 +860,7 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
         array_order = self._transform_array_order()
 
         def _transform_udf(pdf_iter: Iterator[pd.DataFrame]) -> pd.DataFrame:
+            import cudf
             from pyspark import TaskContext
 
             context = TaskContext.get()
@@ -909,15 +878,16 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
                 for index, cuml_object in enumerate(cuml_objects):
                     # Transform the dataset
                     if input_is_multi_cols:
-                        data = cuml_transform_func(cuml_object, pdf[select_cols])
+                        gdf = cudf.from_pandas(pdf)
+                        data = cuml_transform_func(cuml_object, gdf[select_cols])
                     else:
-                        nparray = np.array(list(pdf[select_cols[0]]), order=array_order)
-                        data = cuml_transform_func(cuml_object, nparray)
+                        cparray = cp.array(list(pdf[select_cols[0]]), order=array_order)
+                        data = cuml_transform_func(cuml_object, cparray)
                     # Evaluate the dataset if necessary.
                     if evaluate_func is not None:
-                        data = evaluate_func(pdf, data)
+                        data = evaluate_func(gdf, data)
                         data[pred.model_index] = index
-                    yield data
+                    yield data.to_pandas()
 
         return dataset.mapInPandas(_transform_udf, schema=schema)  # type: ignore
 
@@ -938,13 +908,6 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
         return self._transform_evaluate_internal(
             dataset, schema=self._out_schema(dataset.schema)
         )
-
-    def write(self) -> MLWriter:
-        return _CumlModelWriter(self)
-
-    @classmethod
-    def read(cls) -> MLReader:
-        return _CumlModelReader(cls)
 
     def _transformEvaluate(
         self,
@@ -976,6 +939,51 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
         """Combine a list of same type models into a model"""
         raise NotImplementedError()
 
+
+class _CumlModel(Model, _CumlTransformer, _CumlParams, _CumlCommon):
+    def __init__(
+        self,
+        *,
+        dtype: Optional[str] = None,
+        n_cols: Optional[int] = None,
+        **model_attributes: Any,
+    ) -> None:
+        """
+        Subclass must pass the model attributes which will be saved in model persistence.
+        """
+        super().__init__()
+        self.initialize_cuml_params()
+
+        # model_data is the native data which will be saved for model persistence
+        self._model_attributes = model_attributes
+        self._model_attributes["dtype"] = dtype
+        self._model_attributes["n_cols"] = n_cols
+        self.dtype = dtype
+        self.n_cols = n_cols
+
+    def cpu(self) -> Model:
+        """Return the equivalent PySpark CPU model"""
+        raise NotImplementedError()
+
+    def get_model_attributes(self) -> Optional[Dict[str, Any]]:
+        """Return model attributes as a dictionary."""
+        return self._model_attributes
+
+    @classmethod
+    def from_row(cls, model_attributes: Row):  # type: ignore
+        """
+        Default to pass all the attributes of the model to the model constructor,
+        So please make sure if the constructor can accept all of them.
+        """
+        attr_dict = model_attributes.asDict()
+        return cls(**attr_dict)
+
+    def write(self) -> MLWriter:
+        return _CumlModelWriter(self)
+
+    @classmethod
+    def read(cls) -> MLReader:
+        return _CumlModelReader(cls)
 
 class _CumlModelWithColumns(_CumlModel):
     """Cuml base model for generating extra predicted columns"""
@@ -1021,6 +1029,8 @@ class _CumlModelWithColumns(_CumlModel):
 
         @pandas_udf(self._out_schema(dataset.schema))  # type: ignore
         def predict_udf(iterator: Iterator[pd.DataFrame]) -> Iterator[pd.Series]:
+            import cudf
+            import cupy as cp
             from pyspark import TaskContext
 
             context = TaskContext.get()
@@ -1031,13 +1041,14 @@ class _CumlModelWithColumns(_CumlModel):
             )
             for pdf in iterator:
                 if not input_is_multi_cols:
-                    data = np.array(list(pdf[select_cols[0]]), order=array_order)
+                    data = cp.array(list(pdf[select_cols[0]]), order=array_order)
                 else:
-                    data = pdf[select_cols]
+                    gdf = cudf.from_pandas(pdf)
+                    data = gdf[select_cols]
                 # for normal transform, we don't allow multiple models.
                 res = cuml_transform_func(cuml_object, data)
                 del data
-                yield res
+                yield res.to_pandas()
 
         pred_name = self._get_prediction_name()
         pred_col = predict_udf(struct(*select_cols))

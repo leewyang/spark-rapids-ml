@@ -35,6 +35,8 @@ from pyspark.sql.types import (
 from .core import (
     CumlT,
     FitInputType,
+    TransformInputType,
+    TransformOutputType,
     _ConstructFunc,
     _CumlEstimator,
     _CumlModelWithPredictionCol,
@@ -409,9 +411,9 @@ class KMeansModel(KMeansClass, _CumlModelWithPredictionCol, _KMeansCumlParams):
             return kmeans
 
         def _transform_internal(
-            kmeans: CumlT, df: Union[pd.DataFrame, np.ndarray]
-        ) -> pd.Series:
-            res = list(kmeans.predict(df, normalize_weights=False).to_numpy())
-            return pd.Series(res)
+            kmeans: CumlT, gdf: TransformInputType,
+        ) -> TransformOutputType:
+            res =  kmeans.predict(gdf, normalize_weights=False)
+            return res
 
         return _construct_kmeans, _transform_internal, None
