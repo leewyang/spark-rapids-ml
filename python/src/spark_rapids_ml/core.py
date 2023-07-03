@@ -88,13 +88,20 @@ CumlT = Any
 _SinglePdDataFrameBatchType = Tuple[
     pd.DataFrame, Optional[pd.DataFrame], Optional[pd.DataFrame]
 ]
+
 _SingleNpArrayBatchType = Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]
 
-# FitInputType is type of [(feature, label), ...]
-FitInputType = Union[List[_SinglePdDataFrameBatchType], List[_SingleNpArrayBatchType]]
+_SingleCpArrayBatchType = Tuple["cp.ndarray", Optional["cp.ndarray"], Optional["cp.ndarray"]]
+
+_SingleCuDataFrameBatchType = Tuple[
+    "cudf.DataFrame", Optional["cudf.DataFrame"], Optional["cudf.DataFrame"]
+]
+
+# FitInputType is tuple of [feature, label, ...]
+FitInputType = Union[List[_SingleCuDataFrameBatchType], List[_SingleCpArrayBatchType]]
 
 # Input and output datatypes for transform functions
-TransformInputType = Union["cudf.DataFrame", "cupy.array"]
+TransformInputType = Union["cudf.DataFrame", "cp.ndarray"]
 TransformOutputType = "cudf.DataFrame"
 
 # Function to construct cuml instances on the executor side
@@ -386,7 +393,7 @@ class _CumlCaller(_CumlParams, _CumlCommon):
 
         def _get_cuml_fit_func(self, extra_params: Optional[List[Dict[str, Any]]] = None):
             ...
-            def _cuml_fit(df: CumlInputType, params: Dict[str, Any]) -> Dict[str, Any]:
+            def _cuml_fit(df: FitInputType, params: Dict[str, Any]) -> Dict[str, Any]:
                 "" "
                 df:  a sequence of (X, Y)
                 params: a series of parameters stored in dictionary,
@@ -504,17 +511,17 @@ class _CumlCaller(_CumlParams, _CumlCommon):
                 for pdf in pdf_iter:
                     sizes.append(pdf.shape[0])
                     if multi_col_names:
-                        features = np.array(pdf[multi_col_names], order=array_order)
+                        features = cp.array(pdf[multi_col_names], order=array_order)
                     else:
-                        features = np.array(list(pdf[alias.data]), order=array_order)
+                        features = cp.array(list(pdf[alias.data]), order=array_order)
                     # experiments indicate it is faster to convert to numpy array and then to cupy array than directly
                     # invoking cupy array on the list
                     if cuda_managed_mem_enabled:
                         features = cp.array(features)
 
-                    label = pdf[alias.label] if alias.label in pdf.columns else None
+                    label = cudf.from_pandas(pdf[alias.label]) if alias.label in pdf.columns else None
                     row_number = (
-                        pdf[alias.row_number]
+                        cudf.from_pandas(pdf[alias.row_number])
                         if alias.row_number in pdf.columns
                         else None
                     )
@@ -776,7 +783,7 @@ class _CumlTransformer(Transformer, _CumlParams, _CumlCommon):
             ...
             def _construct_cuml_object() -> CumlT
                 ...
-            def _cuml_transform(cuml_obj: CumlT, df: Union[pd.DataFrame, np.ndarray]) ->pd.DataFrame:
+            def _cuml_transform(cuml_obj: CumlT, df: Union[cudf.DataFrame, cp.ndarray]) -> cudf.DataFrame:
                 ...
             def _evaluate(input_df: Union[pd.DataFrame, np.ndarray], transformed_df: Union[pd.DataFrame, np.ndarray]) -> pd.DataFrame:
                 ...

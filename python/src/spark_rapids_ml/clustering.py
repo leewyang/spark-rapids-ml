@@ -264,7 +264,7 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
     def _get_cuml_fit_func(
         self,
         extra_params: Optional[List[Dict[str, Any]]] = None,
-    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
+    ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any]]:
         cls = self.__class__
 
         array_order = self._fit_array_order()
@@ -273,7 +273,6 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
             dfs: FitInputType,
             params: Dict[str, Any],
         ) -> Dict[str, Any]:
-            import cupy as cp
             from cuml.cluster.kmeans_mg import KMeansMG as CumlKMeansMG
 
             kmeans_object = CumlKMeansMG(
