@@ -27,33 +27,51 @@ def test_spark_pipeline(gpu_number: int, tmp_path: str) -> None:
     data = [(Vectors.dense([0.0, 0.0]), 2.0), (Vectors.dense([1.0, 1.0]), 2.0),
             (Vectors.dense([9.0, 8.0]), 2.0), (Vectors.dense([8.0, 9.0]), 2.0)]
 
+    # KMeans only
+    with CleanSparkSession() as spark:
+        df = spark.createDataFrame(data, ["features", "weighCol"])
+        kmeans = KMeans().setK(2).setFeaturesCol("features").setPredictionCol("predictions")
+        pipe = Pipeline(stages=[kmeans])
+        model = pipe.fit(df)
+        preds = model.transform(df)
+        preds.show()
+
+    # MinMaxScaler + KMeans
     with CleanSparkSession() as spark:
         df = spark.createDataFrame(data, ["features", "weighCol"])
         scaler = MinMaxScaler().setInputCol("features").setOutputCol("scaled_features")
-        kmeans = KMeans().setK(2).setFeaturesCol("features").setPredictionCol("predictions")
-        # kmeans = KMeans().setFeaturesCol("scaled_features").setPredictionCol("predictions")
-        # pipe = Pipeline(stages=[scaler, kmeans])
-        pipe = Pipeline(stages=[kmeans])
+        kmeans = KMeans().setFeaturesCol("scaled_features").setPredictionCol("predictions")
+        pipe = Pipeline(stages=[scaler, kmeans])
         model = pipe.fit(df)
-
         preds = model.transform(df)
         preds.show()
 
 def test_cuml_pipeline(gpu_number: int, tmp_path: str) -> None:
     from pyspark.ml.linalg import Vectors
+    # from spark_rapids_ml.feature import MinMaxScaler
     from spark_rapids_ml.clustering import KMeans
     from spark_rapids_ml.pipeline import _CumlPipeline
 
     data = [(Vectors.dense([0.0, 0.0]), 2.0), (Vectors.dense([1.0, 1.0]), 2.0),
             (Vectors.dense([9.0, 8.0]), 2.0), (Vectors.dense([8.0, 9.0]), 2.0)]
 
+    # KMeans only
     with CleanSparkSession() as spark:
         df = spark.createDataFrame(data, ["features", "weighCol"])
         kmeans = KMeans().setK(2).setFeaturesCol("features").setPredictionCol("predictions")
-        # kmeans = KMeans(num_workers=gpu_number, n_clusters=2).setFeaturesCol("scaled_features").setPredictionCol("predictions")
 
         pipe = _CumlPipeline(stages=[kmeans])
         model = pipe.fit(df)
 
         preds = model.transform(df)
         preds.show()
+
+    # # MinMaxScaler + KMeans
+    # with CleanSparkSession() as spark:
+    #     df = spark.createDataFrame(data, ["features", "weighCol"])
+    #     scaler = MinMaxScaler().setInputCol("features").setOutputCol("scaled_features")
+    #     kmeans = KMeans().setK(2).setFeaturesCol("features").setPredictionCol("predictions")
+    #     pipe = _CumlPipeline(stages=[scaler, kmeans])
+    #     model = pipe.fit(df)
+    #     preds = model.transform(df)
+    #     preds.show()
