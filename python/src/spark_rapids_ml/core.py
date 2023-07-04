@@ -545,9 +545,9 @@ class _CumlCaller(_CumlParams, _CumlCommon):
                     context.barrier()
 
                 if context.partitionId() == 0:
-                    yield pd.DataFrame(data=result)
+                    yield pd.DataFrame(data=result, index=[0])
             else:
-                yield pd.DataFrame(data=result)
+                yield pd.DataFrame(data=result, index=[0])
 
         pipelined_rdd = (
             dataset.mapInPandas(_train_udf, schema=self._out_schema())  # type: ignore
@@ -678,6 +678,18 @@ class _CumlEstimator(Estimator, _CumlCaller):
             paramMaps=paramMaps,
         )
         rows = pipelined_rdd.collect()
+
+        # check for pipeline stages
+        # TODO: refactor
+        model_params = rows[0].asDict()
+        if "stages" in model_params:
+            stages = json.loads(model_params["stages"])
+            for stage in stages:
+                for class_name, class_params in stage.items():
+                    module = __import__("spark_rapids_ml")
+                    clz = getattr(module.clustering, class_name)  # TODO: handle submodules
+                    model = clz(**class_params)
+                    return [model]
 
         models: List["_CumlModel"] = [None]  # type: ignore
         if paramMaps is not None:
