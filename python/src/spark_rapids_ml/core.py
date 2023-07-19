@@ -37,7 +37,7 @@ from typing import (
 import numpy as np
 import pandas as pd
 from pyspark import RDD, TaskContext
-from pyspark.ml import Estimator, Model
+from pyspark.ml import Estimator, Model, Transformer
 from pyspark.ml.evaluation import Evaluator
 from pyspark.ml.functions import array_to_vector, vector_to_array
 from pyspark.ml.linalg import VectorUDT
@@ -751,47 +751,9 @@ class _CumlEstimatorSupervised(_CumlEstimator, HasLabelCol):
         return select_cols, multi_col_names, dimension, feature_type
 
 
-class _CumlModel(Model, _CumlParams, _CumlCommon):
-    """
-    Abstract class for spark-rapids-ml models that are fitted by spark-rapids-ml estimators.
-    """
-
-    def __init__(
-        self,
-        *,
-        dtype: Optional[str] = None,
-        n_cols: Optional[int] = None,
-        **model_attributes: Any,
-    ) -> None:
-        """
-        Subclass must pass the model attributes which will be saved in model persistence.
-        """
+class _CumlTransformer(Transformer, _CumlParams, _CumlCommon):
+    def __init__(self) -> None:
         super().__init__()
-        self.initialize_cuml_params()
-
-        # model_data is the native data which will be saved for model persistence
-        self._model_attributes = model_attributes
-        self._model_attributes["dtype"] = dtype
-        self._model_attributes["n_cols"] = n_cols
-        self.dtype = dtype
-        self.n_cols = n_cols
-
-    def cpu(self) -> Model:
-        """Return the equivalent PySpark CPU model"""
-        raise NotImplementedError()
-
-    def get_model_attributes(self) -> Optional[Dict[str, Any]]:
-        """Return model attributes as a dictionary."""
-        return self._model_attributes
-
-    @classmethod
-    def from_row(cls, model_attributes: Row):  # type: ignore
-        """
-        Default to pass all the attributes of the model to the model constructor,
-        So please make sure if the constructor can accept all of them.
-        """
-        attr_dict = model_attributes.asDict()
-        return cls(**attr_dict)
 
     @abstractmethod
     def _get_cuml_transform_func(
@@ -942,13 +904,6 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
             dataset, schema=self._out_schema(dataset.schema)
         )
 
-    def write(self) -> MLWriter:
-        return _CumlModelWriter(self)
-
-    @classmethod
-    def read(cls) -> MLReader:
-        return _CumlModelReader(cls)
-
     def _transformEvaluate(
         self,
         dataset: DataFrame,
@@ -973,6 +928,56 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
             metrics
         """
         raise NotImplementedError()
+
+
+class _CumlModel(Model, _CumlTransformer, _CumlParams, _CumlCommon):
+    """
+    Abstract class for spark-rapids-ml models that are fitted by spark-rapids-ml estimators.
+    """
+
+    def __init__(
+        self,
+        *,
+        dtype: Optional[str] = None,
+        n_cols: Optional[int] = None,
+        **model_attributes: Any,
+    ) -> None:
+        """
+        Subclass must pass the model attributes which will be saved in model persistence.
+        """
+        super().__init__()
+        self.initialize_cuml_params()
+
+        # model_data is the native data which will be saved for model persistence
+        self._model_attributes = model_attributes
+        self._model_attributes["dtype"] = dtype
+        self._model_attributes["n_cols"] = n_cols
+        self.dtype = dtype
+        self.n_cols = n_cols
+
+    def cpu(self) -> Model:
+        """Return the equivalent PySpark CPU model"""
+        raise NotImplementedError()
+
+    def get_model_attributes(self) -> Optional[Dict[str, Any]]:
+        """Return model attributes as a dictionary."""
+        return self._model_attributes
+
+    @classmethod
+    def from_row(cls, model_attributes: Row):  # type: ignore
+        """
+        Default to pass all the attributes of the model to the model constructor,
+        So please make sure if the constructor can accept all of them.
+        """
+        attr_dict = model_attributes.asDict()
+        return cls(**attr_dict)
+
+    def write(self) -> MLWriter:
+        return _CumlModelWriter(self)
+
+    @classmethod
+    def read(cls) -> MLReader:
+        return _CumlModelReader(cls)
 
     @classmethod
     def _combine(cls: Type["_CumlModel"], models: List["_CumlModel"]) -> "_CumlModel":
