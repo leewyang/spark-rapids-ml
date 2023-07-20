@@ -121,10 +121,26 @@ pred = Pred("prediction", "probability", "model_index")
 # Global parameter alias used by core and subclasses.
 ParamAlias = namedtuple(
     "ParamAlias",
-    ("cuml_init", "handle", "num_cols", "part_sizes", "loop", "fit_multiple_params"),
+    (
+        "cuml_init",
+        "handle",
+        "num_cols",
+        "part_sizes",
+        "loop",
+        "fit_multiple_params",
+        "rank",
+        "nranks",
+    ),
 )
 param_alias = ParamAlias(
-    "cuml_init", "handle", "num_cols", "part_sizes", "loop", "fit_multiple_params"
+    "cuml_init",
+    "handle",
+    "num_cols",
+    "part_sizes",
+    "loop",
+    "fit_multiple_params",
+    "rank",
+    "nranks",
 )
 
 CumlModel = TypeVar("CumlModel", bound="_CumlModel")
@@ -523,6 +539,9 @@ class _CumlCaller(_CumlParams, _CumlCommon):
                 params[param_alias.part_sizes] = sizes
                 params[param_alias.num_cols] = dimension
                 params[param_alias.loop] = cc._loop
+                if enable_nccl:
+                    params[param_alias.rank] = cc._rank
+                    params[param_alias.nranks] = cc._nranks
 
                 logger.info("Invoking cuml fit")
 
