@@ -35,7 +35,7 @@ from pyspark.sql.types import (
     StructType,
 )
 
-from .core import (
+from ..core import (
     CumlT,
     FitInputType,
     _ConstructFunc,
@@ -46,8 +46,8 @@ from .core import (
     param_alias,
     transform_evaluate,
 )
-from .params import P, _CumlClass, _CumlParams
-from .utils import (
+from ..params import P, _CumlClass, _CumlParams
+from ..utils import (
     PartitionDescriptor,
     _get_spark_session,
     dtype_to_pyspark_type,
