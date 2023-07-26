@@ -26,6 +26,7 @@ from typing import (
     Generic,
     Iterator,
     List,
+    NewType,
     Optional,
     Sequence,
     Tuple,
@@ -87,13 +88,12 @@ CumlT = Any
 _SinglePdDataFrameBatchType = Tuple[
     pd.DataFrame, Optional[pd.DataFrame], Optional[pd.DataFrame]
 ]
-_SingleNpArrayBatchType = Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]
 
 # FitInputType is type of [(feature, label), ...]
-FitInputType = Union[List[_SinglePdDataFrameBatchType], List[_SingleNpArrayBatchType]]
+FitInputType = List[_SinglePdDataFrameBatchType]
 
 # TransformInput type
-TransformInputType = Union["cudf.DataFrame", np.ndarray]
+TransformInputType = Union[pd.DataFrame, "cudf.DataFrame"]
 
 # Function to construct cuml instances on the executor side
 _ConstructFunc = Callable[..., Union[CumlT, List[CumlT]]]
@@ -390,7 +390,6 @@ class _CumlCaller(_CumlParams, _CumlCommon):
     @abstractmethod
     def _get_cuml_fit_func(
         self,
-        dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
     ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
         """
@@ -477,7 +476,7 @@ class _CumlCaller(_CumlParams, _CumlCommon):
         params[param_alias.fit_multiple_params] = fit_multiple_params
 
         cuml_fit_func = self._get_cuml_fit_func(
-            dataset, None if len(fit_multiple_params) == 0 else fit_multiple_params
+            None if len(fit_multiple_params) == 0 else fit_multiple_params
         )
         array_order = self._fit_array_order()
 
@@ -849,7 +848,7 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
         return "F"
 
     @abstractmethod
-    def _out_schema(self, input_schema: StructType) -> Union[StructType, str]:
+    def _out_schema(self, input_schema: Optional[StructType]) -> Union[StructType, str]:
         """
         The output schema of the model, which will be used to
         construct the returning pandas dataframe
@@ -929,12 +928,8 @@ class _CumlModel(Model, _CumlParams, _CumlCommon):
             # TODO try to concatenate all the data and do the transform.
             for pdf in pdf_iter:
                 for index, cuml_object in enumerate(cuml_objects):
-                    # Transform the dataset
-                    if input_is_multi_cols:
-                        data = cuml_transform_func(cuml_object, pdf[select_cols])
-                    else:
-                        nparray = np.array(list(pdf[select_cols[0]]), order=array_order)
-                        data = cuml_transform_func(cuml_object, nparray)
+                    data = cuml_transform_func(cuml_object, pdf[select_cols])
+
                     # Evaluate the dataset if necessary.
                     if evaluate_func is not None:
                         data = evaluate_func(pdf, data)
@@ -1091,7 +1086,7 @@ class _CumlModelWithColumns(_CumlModel):
 
             return dataset
 
-    def _out_schema(self, input_schema: StructType) -> Union[StructType, str]:
+    def _out_schema(self, input_schema: Optional[StructType]) -> Union[StructType, str]:
         assert self.dtype is not None
 
         pyspark_type = dtype_to_pyspark_type(self.dtype)

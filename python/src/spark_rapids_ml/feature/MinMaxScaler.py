@@ -102,7 +102,6 @@ class MinMaxScaler(MinMaxScalerClass, _CumlEstimator, _MinMaxScalerCumlParams):
 
     def _get_cuml_fit_func(
         self,
-        dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
     ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
         array_order = self._fit_array_order()
@@ -261,7 +260,7 @@ class MinMaxScalerModel(
 
         return _construct, _transform_internal, None
 
-    def _out_schema(self, input_schema: StructType) -> Union[StructType, str]:
+    def _out_schema(self, input_schema: Optional[StructType]) -> Union[StructType, str]:
         assert self.dtype is not None
 
         pyspark_type = dtype_to_pyspark_type(self.dtype)

@@ -289,7 +289,7 @@ class NearestNeighbors(
         pass
 
     def _get_cuml_fit_func(  # type: ignore
-        self, dataset: DataFrame
+        self,
     ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
         """
         This class overrides _fit and will not call _get_cuml_fit_func.
@@ -433,7 +433,6 @@ class NearestNeighborsModel(
 
     def _get_cuml_fit_func(
         self,
-        dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
     ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
         label_isdata = self._label_isdata

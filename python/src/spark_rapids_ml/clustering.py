@@ -261,7 +261,6 @@ class KMeans(KMeansClass, _CumlEstimator, _KMeansCumlParams):
 
     def _get_cuml_fit_func(
         self,
-        dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
     ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
         cls = self.__class__
@@ -379,8 +378,10 @@ class KMeansModel(KMeansClass, _CumlModelWithPredictionCol, _KMeansCumlParams):
         Fall back to PySpark ML KMeansModel"""
         return self.cpu().predict(value)
 
-    def _out_schema(self, input_schema: StructType) -> Union[StructType, str]:
-        ret_schema = "int"
+    def _out_schema(self, input_schema: Optional[StructType]) -> Union[StructType, str]:
+        ret_schema = StructType(
+            [StructField(self.getPredictionCol(), IntegerType(), True)]
+        )
         return ret_schema
 
     def _transform_array_order(self) -> _ArrayOrder:
@@ -409,10 +410,14 @@ class KMeansModel(KMeansClass, _CumlModelWithPredictionCol, _KMeansCumlParams):
             )
             return kmeans
 
-        def _transform_internal(
-            kmeans: CumlT, df: Union[pd.DataFrame, np.ndarray]
-        ) -> pd.Series:
-            res = list(kmeans.predict(df, normalize_weights=False).to_numpy())
-            return pd.Series(res)
+        def _transform_internal(kmeans: CumlT, pdf: pd.DataFrame) -> pd.DataFrame:
+            if isinstance(pdf, pd.DataFrame):
+                # TODO: support selectCols
+                nparray = np.array(list(pdf["features"]), order=array_order)
+            else:
+                nparray = pdf
+
+            res = kmeans.predict(nparray, normalize_weights=False)
+            return res.to_frame().to_pandas()
 
         return _construct_kmeans, _transform_internal, None

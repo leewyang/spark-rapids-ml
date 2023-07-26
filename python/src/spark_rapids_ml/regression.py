@@ -390,7 +390,6 @@ class LinearRegression(
 
     def _get_cuml_fit_func(
         self,
-        dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
     ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
         def _linear_regression_fit(

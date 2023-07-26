@@ -268,7 +268,6 @@ class _RandomForestEstimator(
 
     def _get_cuml_fit_func(
         self,
-        dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
     ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
         # Each element of n_estimators_of_all_params is a list value which

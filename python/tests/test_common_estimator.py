@@ -164,17 +164,12 @@ class SparkRapidsMLDummy(
 
     def _get_cuml_fit_func(
         self,
-        dataset: DataFrame,
         extra_params: Optional[List[Dict[str, Any]]] = None,
     ) -> Callable[[FitInputType, Dict[str, Any]], Dict[str, Any],]:
         num_workers = self.num_workers
         partition_num = self.partition_num
         m = self.m
         n = self.n
-
-        # if the common framework tries to pickle the whole class,
-        # it will throw exception since dataset is not picklable.
-        self.test_pickle_dataframe = dataset
 
         runtime_check = self.runtime_check
 
@@ -300,7 +295,8 @@ class SparkRapidsMLDummyModel(
 
         return _construct_dummy, _dummy_transform, None
 
-    def _out_schema(self, input_schema: StructType) -> Union[StructType, str]:
+    def _out_schema(self, input_schema: Optional[StructType]) -> Union[StructType, str]:
+        assert input_schema
         return input_schema
 
 
