@@ -349,79 +349,91 @@ document.write(`
 <td><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.cpu" title="spark_rapids_ml.classification.LogisticRegressionModel.cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu</span></code></a>()</p></td>
-<td><p>Return the equivalent PySpark CPU model</p></td>
+<td><p>Return the PySpark ML LogisticRegressionModel</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.explainParam" title="spark_rapids_ml.classification.LogisticRegressionModel.explainParam"><code class="xref py py-obj docutils literal notranslate"><span class="pre">explainParam</span></code></a>(param)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.evaluate" title="spark_rapids_ml.classification.LogisticRegressionModel.evaluate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evaluate</span></code></a>(dataset)</p></td>
+<td><p>cuML doesn't support evaluating.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.explainParam" title="spark_rapids_ml.classification.LogisticRegressionModel.explainParam"><code class="xref py py-obj docutils literal notranslate"><span class="pre">explainParam</span></code></a>(param)</p></td>
 <td><p>Explains a single param and returns its name, doc, and optional default value and user-supplied value in a string.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.explainParams" title="spark_rapids_ml.classification.LogisticRegressionModel.explainParams"><code class="xref py py-obj docutils literal notranslate"><span class="pre">explainParams</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.explainParams" title="spark_rapids_ml.classification.LogisticRegressionModel.explainParams"><code class="xref py py-obj docutils literal notranslate"><span class="pre">explainParams</span></code></a>()</p></td>
 <td><p>Returns the documentation of all params with their optionally default values and user-supplied values.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.extractParamMap" title="spark_rapids_ml.classification.LogisticRegressionModel.extractParamMap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extractParamMap</span></code></a>([extra])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.extractParamMap" title="spark_rapids_ml.classification.LogisticRegressionModel.extractParamMap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extractParamMap</span></code></a>([extra])</p></td>
 <td><p>Extracts the embedded default param values and user-supplied values, and then merges them with extra values from input into a flat param map, where the latter value is used if there exist conflicts, i.e., with ordering: default param values &lt; user-supplied values &lt; extra.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.from_row" title="spark_rapids_ml.classification.LogisticRegressionModel.from_row"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_row</span></code></a>(model_attributes)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.from_row" title="spark_rapids_ml.classification.LogisticRegressionModel.from_row"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_row</span></code></a>(model_attributes)</p></td>
 <td><p>Default to pass all the attributes of the model to the model constructor, So please make sure if the constructor can accept all of them.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getFeaturesCol" title="spark_rapids_ml.classification.LogisticRegressionModel.getFeaturesCol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getFeaturesCol</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getFeaturesCol" title="spark_rapids_ml.classification.LogisticRegressionModel.getFeaturesCol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getFeaturesCol</span></code></a>()</p></td>
 <td><p>Gets the value of <a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.featuresCol" title="spark_rapids_ml.classification.LogisticRegressionModel.featuresCol"><code class="xref py py-attr docutils literal notranslate"><span class="pre">featuresCol</span></code></a> or <a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.featuresCols" title="spark_rapids_ml.classification.LogisticRegressionModel.featuresCols"><code class="xref py py-attr docutils literal notranslate"><span class="pre">featuresCols</span></code></a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getFeaturesCols" title="spark_rapids_ml.classification.LogisticRegressionModel.getFeaturesCols"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getFeaturesCols</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getFeaturesCols" title="spark_rapids_ml.classification.LogisticRegressionModel.getFeaturesCols"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getFeaturesCols</span></code></a>()</p></td>
 <td><p>Gets the value of featuresCols or its default value.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getFitIntercept" title="spark_rapids_ml.classification.LogisticRegressionModel.getFitIntercept"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getFitIntercept</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getFitIntercept" title="spark_rapids_ml.classification.LogisticRegressionModel.getFitIntercept"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getFitIntercept</span></code></a>()</p></td>
 <td><p>Gets the value of fitIntercept or its default value.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getLabelCol" title="spark_rapids_ml.classification.LogisticRegressionModel.getLabelCol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getLabelCol</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getLabelCol" title="spark_rapids_ml.classification.LogisticRegressionModel.getLabelCol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getLabelCol</span></code></a>()</p></td>
 <td><p>Gets the value of labelCol or its default value.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getMaxIter" title="spark_rapids_ml.classification.LogisticRegressionModel.getMaxIter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getMaxIter</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getMaxIter" title="spark_rapids_ml.classification.LogisticRegressionModel.getMaxIter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getMaxIter</span></code></a>()</p></td>
 <td><p>Gets the value of maxIter or its default value.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getOrDefault" title="spark_rapids_ml.classification.LogisticRegressionModel.getOrDefault"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getOrDefault</span></code></a>(param)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getOrDefault" title="spark_rapids_ml.classification.LogisticRegressionModel.getOrDefault"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getOrDefault</span></code></a>(param)</p></td>
 <td><p>Gets the value of a param in the user-supplied param map or its default value.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getParam" title="spark_rapids_ml.classification.LogisticRegressionModel.getParam"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getParam</span></code></a>(paramName)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getParam" title="spark_rapids_ml.classification.LogisticRegressionModel.getParam"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getParam</span></code></a>(paramName)</p></td>
 <td><p>Gets a param by its name.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getPredictionCol" title="spark_rapids_ml.classification.LogisticRegressionModel.getPredictionCol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getPredictionCol</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getPredictionCol" title="spark_rapids_ml.classification.LogisticRegressionModel.getPredictionCol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getPredictionCol</span></code></a>()</p></td>
 <td><p>Gets the value of predictionCol or its default value.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getProbabilityCol" title="spark_rapids_ml.classification.LogisticRegressionModel.getProbabilityCol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getProbabilityCol</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getProbabilityCol" title="spark_rapids_ml.classification.LogisticRegressionModel.getProbabilityCol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getProbabilityCol</span></code></a>()</p></td>
 <td><p>Gets the value of probabilityCol or its default value.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getRawPredictionCol" title="spark_rapids_ml.classification.LogisticRegressionModel.getRawPredictionCol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getRawPredictionCol</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getRawPredictionCol" title="spark_rapids_ml.classification.LogisticRegressionModel.getRawPredictionCol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getRawPredictionCol</span></code></a>()</p></td>
 <td><p>Gets the value of rawPredictionCol or its default value.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getRegParam" title="spark_rapids_ml.classification.LogisticRegressionModel.getRegParam"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getRegParam</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getRegParam" title="spark_rapids_ml.classification.LogisticRegressionModel.getRegParam"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getRegParam</span></code></a>()</p></td>
 <td><p>Gets the value of regParam or its default value.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getTol" title="spark_rapids_ml.classification.LogisticRegressionModel.getTol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getTol</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.getTol" title="spark_rapids_ml.classification.LogisticRegressionModel.getTol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getTol</span></code></a>()</p></td>
 <td><p>Gets the value of tol or its default value.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.get_model_attributes" title="spark_rapids_ml.classification.LogisticRegressionModel.get_model_attributes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_model_attributes</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.get_model_attributes" title="spark_rapids_ml.classification.LogisticRegressionModel.get_model_attributes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_model_attributes</span></code></a>()</p></td>
 <td><p>Return model attributes as a dictionary.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.hasDefault" title="spark_rapids_ml.classification.LogisticRegressionModel.hasDefault"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hasDefault</span></code></a>(param)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.hasDefault" title="spark_rapids_ml.classification.LogisticRegressionModel.hasDefault"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hasDefault</span></code></a>(param)</p></td>
 <td><p>Checks whether a param has a default value.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.hasParam" title="spark_rapids_ml.classification.LogisticRegressionModel.hasParam"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hasParam</span></code></a>(paramName)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.hasParam" title="spark_rapids_ml.classification.LogisticRegressionModel.hasParam"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hasParam</span></code></a>(paramName)</p></td>
 <td><p>Tests whether this instance contains a param with a given (string) name.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.initialize_cuml_logging" title="spark_rapids_ml.classification.LogisticRegressionModel.initialize_cuml_logging"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialize_cuml_logging</span></code></a>(verbose)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.initialize_cuml_logging" title="spark_rapids_ml.classification.LogisticRegressionModel.initialize_cuml_logging"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialize_cuml_logging</span></code></a>(verbose)</p></td>
 <td><p>Initializes the logger for cuML.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.initialize_cuml_params" title="spark_rapids_ml.classification.LogisticRegressionModel.initialize_cuml_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialize_cuml_params</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.initialize_cuml_params" title="spark_rapids_ml.classification.LogisticRegressionModel.initialize_cuml_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialize_cuml_params</span></code></a>()</p></td>
 <td><p>Set the default values of cuML parameters to match their Spark equivalents.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.isDefined" title="spark_rapids_ml.classification.LogisticRegressionModel.isDefined"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isDefined</span></code></a>(param)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.isDefined" title="spark_rapids_ml.classification.LogisticRegressionModel.isDefined"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isDefined</span></code></a>(param)</p></td>
 <td><p>Checks whether a param is explicitly set by user or has a default value.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.isSet" title="spark_rapids_ml.classification.LogisticRegressionModel.isSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isSet</span></code></a>(param)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.isSet" title="spark_rapids_ml.classification.LogisticRegressionModel.isSet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">isSet</span></code></a>(param)</p></td>
 <td><p>Checks whether a param is explicitly set by user.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.load" title="spark_rapids_ml.classification.LogisticRegressionModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.load" title="spark_rapids_ml.classification.LogisticRegressionModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
 <td><p>Reads an ML instance from the input path, a shortcut of <cite>read().load(path)</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.predict" title="spark_rapids_ml.classification.LogisticRegressionModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(value)</p></td>
+<td><p>cuML doesn't support predicting 1 single sample.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.predictProbability" title="spark_rapids_ml.classification.LogisticRegressionModel.predictProbability"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predictProbability</span></code></a>(value)</p></td>
+<td><p>Predict the probability of each class given the features.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.predictRaw" title="spark_rapids_ml.classification.LogisticRegressionModel.predictRaw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predictRaw</span></code></a>(value)</p></td>
+<td><p>Raw prediction for each possible label.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#spark_rapids_ml.classification.LogisticRegressionModel.read" title="spark_rapids_ml.classification.LogisticRegressionModel.read"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read</span></code></a>()</p></td>
 <td><p></p></td>
@@ -531,8 +543,15 @@ document.write(`
 
 <dl class="py method">
 <dt class="sig sig-object py" id="spark_rapids_ml.classification.LogisticRegressionModel.cpu">
-<span class="sig-name descname"><span class="pre">cpu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Model</span></span></span><a class="headerlink" href="#spark_rapids_ml.classification.LogisticRegressionModel.cpu" title="Permalink to this definition">#</a></dt>
-<dd><p>Return the equivalent PySpark CPU model</p>
+<span class="sig-name descname"><span class="pre">cpu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.classification.LogisticRegressionModel.html#pyspark.ml.classification.LogisticRegressionModel" title="(in PySpark vmaster)"><span class="pre">LogisticRegressionModel</span></a></span></span><a class="headerlink" href="#spark_rapids_ml.classification.LogisticRegressionModel.cpu" title="Permalink to this definition">#</a></dt>
+<dd><p>Return the PySpark ML LogisticRegressionModel</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spark_rapids_ml.classification.LogisticRegressionModel.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.classification.LogisticRegressionSummary.html#pyspark.ml.classification.LogisticRegressionSummary" title="(in PySpark vmaster)"><span class="pre">LogisticRegressionSummary</span></a></span></span><a class="headerlink" href="#spark_rapids_ml.classification.LogisticRegressionModel.evaluate" title="Permalink to this definition">#</a></dt>
+<dd><p>cuML doesn’t support evaluating.
+Fall back to PySpark ML LogisticRegressionModel</p>
 </dd></dl>
 
 <dl class="py method">
@@ -709,6 +728,27 @@ a default value.</p>
 <dt class="sig sig-object py" id="spark_rapids_ml.classification.LogisticRegressionModel.load">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">RL</span></span></span><a class="headerlink" href="#spark_rapids_ml.classification.LogisticRegressionModel.load" title="Permalink to this definition">#</a></dt>
 <dd><p>Reads an ML instance from the input path, a shortcut of <cite>read().load(path)</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spark_rapids_ml.classification.LogisticRegressionModel.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.linalg.Vector.html#pyspark.ml.linalg.Vector" title="(in PySpark vmaster)"><span class="pre">Vector</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#spark_rapids_ml.classification.LogisticRegressionModel.predict" title="Permalink to this definition">#</a></dt>
+<dd><p>cuML doesn’t support predicting 1 single sample.
+Fall back to PySpark ML LogisticRegressionModel</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spark_rapids_ml.classification.LogisticRegressionModel.predictProbability">
+<span class="sig-name descname"><span class="pre">predictProbability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.linalg.Vector.html#pyspark.ml.linalg.Vector" title="(in PySpark vmaster)"><span class="pre">Vector</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.linalg.Vector.html#pyspark.ml.linalg.Vector" title="(in PySpark vmaster)"><span class="pre">Vector</span></a></span></span><a class="headerlink" href="#spark_rapids_ml.classification.LogisticRegressionModel.predictProbability" title="Permalink to this definition">#</a></dt>
+<dd><p>Predict the probability of each class given the features.
+Fall back to PySpark ML LogisticRegressionModel</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="spark_rapids_ml.classification.LogisticRegressionModel.predictRaw">
+<span class="sig-name descname"><span class="pre">predictRaw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.linalg.Vector.html#pyspark.ml.linalg.Vector" title="(in PySpark vmaster)"><span class="pre">Vector</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.ml.linalg.Vector.html#pyspark.ml.linalg.Vector" title="(in PySpark vmaster)"><span class="pre">Vector</span></a></span></span><a class="headerlink" href="#spark_rapids_ml.classification.LogisticRegressionModel.predictRaw" title="Permalink to this definition">#</a></dt>
+<dd><p>Raw prediction for each possible label.
+Fall back to PySpark ML LogisticRegressionModel</p>
 </dd></dl>
 
 <dl class="py method">
@@ -955,6 +995,7 @@ uses <code class="xref py py-func docutils literal notranslate"><span class="pre
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.clear"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.clear()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.copy"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.copy()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.cpu"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.cpu()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.evaluate"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.evaluate()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.explainParam"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.explainParam()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.explainParams"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.explainParams()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.extractParamMap"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.extractParamMap()</span></code></a></li>
@@ -979,6 +1020,9 @@ uses <code class="xref py py-func docutils literal notranslate"><span class="pre
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.isDefined"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.isDefined()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.isSet"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.isSet()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.load"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.load()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.predict"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.predict()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.predictProbability"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.predictProbability()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.predictRaw"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.predictRaw()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.read"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.read()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.save"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.save()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spark_rapids_ml.classification.LogisticRegressionModel.set"><code class="docutils literal notranslate"><span class="pre">LogisticRegressionModel.set()</span></code></a></li>

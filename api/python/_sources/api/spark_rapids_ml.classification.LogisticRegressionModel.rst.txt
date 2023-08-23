@@ -38,6 +38,7 @@ LogisticRegressionModel
        ~LogisticRegressionModel.clear
        ~LogisticRegressionModel.copy
        ~LogisticRegressionModel.cpu
+       ~LogisticRegressionModel.evaluate
        ~LogisticRegressionModel.explainParam
        ~LogisticRegressionModel.explainParams
        ~LogisticRegressionModel.extractParamMap
@@ -62,6 +63,9 @@ LogisticRegressionModel
        ~LogisticRegressionModel.isDefined
        ~LogisticRegressionModel.isSet
        ~LogisticRegressionModel.load
+       ~LogisticRegressionModel.predict
+       ~LogisticRegressionModel.predictProbability
+       ~LogisticRegressionModel.predictRaw
        ~LogisticRegressionModel.read
        ~LogisticRegressionModel.save
        ~LogisticRegressionModel.set
@@ -115,6 +119,7 @@ LogisticRegressionModel
     .. automethod:: clear
     .. automethod:: copy
     .. automethod:: cpu
+    .. automethod:: evaluate
     .. automethod:: explainParam
     .. automethod:: explainParams
     .. automethod:: extractParamMap
@@ -139,6 +144,9 @@ LogisticRegressionModel
     .. automethod:: isDefined
     .. automethod:: isSet
     .. automethod:: load
+    .. automethod:: predict
+    .. automethod:: predictProbability
+    .. automethod:: predictRaw
     .. automethod:: read
     .. automethod:: save
     .. automethod:: set
