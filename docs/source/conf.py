@@ -22,13 +22,13 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.githubpages',
     'sphinx.ext.intersphinx',
+    'sphinx_multiversion',
 ]
 
 numpydoc_show_class_members = False
 
 autodoc_inherit_docstrings = False
 
-templates_path = ['_templates']
 exclude_patterns = []
 
 intersphinx_mapping = {
@@ -41,6 +41,15 @@ intersphinx_mapping = {
 
 html_theme = 'pydata_sphinx_theme'
 
+templates_path = ['_templates']
+
+html_sidebars = {
+    '**': ['versioning.html'],
+}
+
+smv_latest_version = "branch-23.08"
+smv_branch_whitelist = r'^branch-.*$'
+
 import inspect
 from spark_rapids_ml.utils import _unsupported_methods_attributes
 
@@ -52,7 +61,7 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
         if frame.function == "get_members":
             doc_class = frame.frame.f_locals["obj"]
             break
-    
+
     exclude = skip
     if doc_class:
         if doc_class not in _unsupported_by_class:
